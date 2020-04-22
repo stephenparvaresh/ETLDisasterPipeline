@@ -119,9 +119,9 @@ def build_model():
         'features__text_pipeline__vect__max_df': (0.5, 0.75, 1.0),
         'features__text_pipeline__vect__max_features': (None, 5000, 10000),
         'features__text_pipeline__tfidf__use_idf': (True, False),
-        'clf__estimator__n_estimators': [50, 100],
-        'clf__estimator__min_samples_split': [2, 3, 4],
-        'clf__estimator__criterion': ['entropy', 'gini']
+#         'clf__estimator__n_estimators': [50, 100, 200],
+#         'clf__estimator__min_samples_split': [2, 3, 4],
+#         'clf__estimator__criterion': ['entropy', 'gini']
     }
 
     cv = GridSearchCV(pipeline, param_grid=parameters)
@@ -140,7 +140,7 @@ def evaluate_model(model, X_test, Y_test, category_names):
     Output:
         Print accuracy and classfication report for each category
     '''
-    def multioutput_fscore(y_true,y_pred,beta=1):
+    def multioutput_fscore(Y_true,Y_pred,beta=1):
         '''
         Evaluate multioutput model performance
         Input:
@@ -152,29 +152,29 @@ def evaluate_model(model, X_test, Y_test, category_names):
         '''
         
         score_list = []
-        if isinstance(y_pred, pd.DataFrame) == True:
-            y_pred = y_pred.values
+        if isinstance(Y_pred, pd.DataFrame) == True:
+            Y_pred = Y_pred.values
         if isinstance(y_true, pd.DataFrame) == True:
-            y_true = y_true.values
-        for column in range(0,y_true.shape[1]):
-            score = fbeta_score(y_true[:,column],y_pred[:,column],beta,average='weighted')
+            Y_true = Y_true.values
+        for column in range(0,Y_true.shape[1]):
+            score = fbeta_score(Y_true[:,column],Y_pred[:,column],beta,average='weighted')
             score_list.append(score)
         f1score_numpy = np.asarray(score_list)
         f1score_numpy = f1score_numpy[f1score_numpy<1]
         f1score = gmean(f1score_numpy)
         return  f1score
-    y_pred = model.predict(X_test)
+    Y_pred = model.predict(X_test)
     
-    multi_f1 = multioutput_fscore(y_test,y_pred, beta = 1)
-    overall_accuracy = (y_pred == y_test).mean().mean()
+    multi_f1 = multioutput_fscore(Y_test,Y_pred, beta = 1)
+    overall_accuracy = (Y_pred == Y_test).mean().mean()
     print('Average overall accuracy {0:.2f}% \n'.format(overall_accuracy*100))
     print('F1 score (custom definition) {0:.2f}%\n'.format(multi_f1*100))
     
-    y_pred_pd = pd.DataFrame(y_pred, columns = y_test.columns)
+    Y_pred_pd = pd.DataFrame(Y_pred, columns = Y_test.columns)
     for column in y_test.columns:
         print('------------------------------------------------------\n')
         print('FEATURE: {}\n'.format(column))
-        print(classification_report(y_test[column],y_pred_pd[column]))
+        print(classification_report(Y_test[column],Y_pred_pd[column]))
 
 
 def save_model(model, model_filepath):
